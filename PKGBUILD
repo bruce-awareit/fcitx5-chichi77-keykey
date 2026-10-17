@@ -1,6 +1,6 @@
 # Maintainer: Foodle <bruce[at]mail.kh.edu.tw>
 pkgname=fcitx5-chichi77-keykey
-pkgver=1.3.1
+pkgver=1.3.2
 pkgrel=1
 pkgdesc="琦琦輸入法 (chichi77 KeyKey) - Fcitx5 Chinese input method (Bopomofo / Cangjie / Simplex)"
 arch=('x86_64')
@@ -28,7 +28,7 @@ optdepends=(
 source=(
   "https://github.com/polobread/KeyKey/archive/refs/tags/v${pkgver}.tar.gz"
 )
-sha256sums=('c181bc0e658957dbebab5b97311454a1c1bfe15f51cbfb3861054c8a0fc39d28')
+sha256sums=('721c8dc0cd0ccc9c4e90abf4562d4ca793fdd3bb04ccd2e2065ae95ec8532afa')
 
 build() {
   cd "${srcdir}/KeyKey-${pkgver}/Source/Loaders/Linux-IME"
