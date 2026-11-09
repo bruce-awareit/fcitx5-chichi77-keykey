@@ -1,6 +1,6 @@
 # Maintainer: Foodle <bruce[at]mail.kh.edu.tw>
 pkgname=fcitx5-chichi77-keykey
-pkgver=1.3.9
+pkgver=1.5.0
 pkgrel=1
 pkgdesc="琦琦輸入法 (chichi77 KeyKey) - Fcitx5 Chinese input method (Bopomofo / Cangjie / Simplex)"
 arch=('x86_64')
@@ -19,6 +19,8 @@ makedepends=(
   'sqlite'
   'pkgconf'
   'python'
+  'rust'
+  'rust-docs'
 )
 optdepends=(
   'fcitx5-gtk: GTK support'
@@ -27,8 +29,19 @@ optdepends=(
 )
 source=(
   "https://github.com/polobread/KeyKey/archive/refs/tags/v${pkgver}.tar.gz"
+  "arch-rust-docs-compatibility.patch"
 )
-sha256sums=('9c315e73dc2360b8be61e99398f1211174f0ff6fdd72fb0febb8c256a3bc8be6')
+sha256sums=(
+  '4a53c0b5971d8bf3b93a7c8a5d2b8f650aa1f31c7da94342877df3a1d7935947'
+  'SKIP'
+)
+
+prepare() {
+  cd "${srcdir}/KeyKey-${pkgver}"
+  
+  # 自動套用相容 Arch Linux 的 Rust doc/licenses 路徑補丁
+  patch -Np1 -i "${srcdir}/arch-rust-docs-compatibility.patch"
+}
 
 build() {
   cd "${srcdir}/KeyKey-${pkgver}/Source/Loaders/Linux-IME"
@@ -50,4 +63,3 @@ package() {
   install -Dm644 "${srcdir}/KeyKey-${pkgver}/LICENSE.txt" \
     "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
 }
-
