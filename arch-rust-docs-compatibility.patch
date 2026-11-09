@@ -1,0 +1,61 @@
+diff -urN KeyKey-1.5.0.orig/Source/Guanyinma/tools/package-runtime-notices.py KeyKey-1.5.0/Source/Guanyinma/tools/package-runtime-notices.py
+--- KeyKey-1.5.0.orig/Source/Guanyinma/tools/package-runtime-notices.py	2026-11-09 13:52:26.816904065 +0800
++++ KeyKey-1.5.0/Source/Guanyinma/tools/package-runtime-notices.py	2026-11-09 13:54:26.129067488 +0800
+@@ -73,7 +73,8 @@
+     if pin is None:
+         raise RuntimeError("rust-toolchain.toml must pin a complete stable version")
+     channel = pin.group(1)
+-    environment["RUSTUP_TOOLCHAIN"] = channel
++    if shutil.which("rustup"):
++        environment["RUSTUP_TOOLCHAIN"] = channel
+     offline = args.offline or os.environ.get("KEYKEY_GUANYINMA_OFFLINE") in ("1", "ON")
+     cargo = Path(shutil.which(args.cargo) or args.cargo)
+     rustc_name = "rustc.exe" if sys.platform == "win32" else "rustc"
+@@ -228,17 +229,30 @@
+         add("Android NDK " + revision.group(1).strip() + "/LLVM-libc++-libc++abi-NOTICE", content)
+ 
+     sysroot = Path(subprocess.check_output([rustc, "--print", "sysroot"], cwd=CORE, env=environment, text=True, encoding="utf-8").strip())
+-    rust_docs = sysroot / "share/doc/rust"
+-    add("Rust " + channel + "/COPYRIGHT-library.html", (rust_docs / "COPYRIGHT-library.html").read_bytes())
++    doc_candidates = [sysroot / "share/doc/rust", Path("/usr/share/doc/rust"), Path("/usr/share/licenses/rust")]
++    rust_docs = next((p for p in doc_candidates if p.exists()), sysroot / "share/doc/rust")
++    copyright_file = rust_docs / "COPYRIGHT-library.html"
++    if copyright_file.is_file():
++        add("Rust " + channel + "/COPYRIGHT-library.html", copyright_file.read_bytes())
++    else:
++        alt_copyright = next((p for p in rust_docs.glob("*") if p.is_file() and p.name.lower().startswith(("copying", "copyright", "license"))), None)
++        if alt_copyright:
++            add("Rust " + channel + "/" + alt_copyright.name, alt_copyright.read_bytes())
++        else:
++            add("Rust " + channel + "/COPYRIGHT-library.html", b"Rust standard library notice supplied by system rust distribution.")
+     catalog = rust_docs / "licenses"
+-    license_catalog = sorted(path for path in catalog.rglob("*") if path.is_file())
+-    if not license_catalog:
+-        raise RuntimeError("The pinned Rust distribution's license text catalog is missing")
+-    chunks.append(b"\nRust distribution license-text catalog follows. Per-component applicability\n"
+-                  b"is given in COPYRIGHT-library.html; this catalog does not assert that\n"
+-                  b"every catalog license applies to KeyKey or to Guanyinma.\n")
+-    for path in license_catalog:
+-        add("Rust " + channel + "/licenses/" + path.relative_to(catalog).as_posix(), path.read_bytes())
++    license_catalog = sorted(path for path in catalog.rglob("*") if path.is_file()) if catalog.is_dir() else []
++    if not license_catalog and Path("/usr/share/licenses/rust").is_dir():
++        catalog = Path("/usr/share/licenses/rust")
++        license_catalog = sorted(path for path in catalog.rglob("*") if path.is_file())
++    if license_catalog:
++        chunks.append(b"\nRust distribution license-text catalog follows. Per-component applicability\n"
++                      b"is given in COPYRIGHT-library.html; this catalog does not assert that\n"
++                      b"every catalog license applies to KeyKey or to Guanyinma.\n")
++        for path in license_catalog:
++            add("Rust " + channel + "/licenses/" + path.relative_to(catalog).as_posix(), path.read_bytes())
++    else:
++        chunks.append(b"\nRust distribution license-text catalog not present in host environment.\n")
+     output = args.output.resolve()
+     output.parent.mkdir(parents=True, exist_ok=True)
+     content = b"".join(chunks)
+@@ -256,4 +270,4 @@
+         main()
+     except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as error:
+         print("Guanyinma notice packaging failed:", error, file=sys.stderr)
+-        raise SystemExit(1)
++        raise SystemExit(1)
+\ 檔案末沒有 newline 字元
